@@ -1,100 +1,104 @@
 import React, { useContext } from 'react';
-import MyContext from '../context/MyContext';
+import Context from '../context/MyContext';
 
-function PlanetTable() {
-  const { statewars, filterwars } = useContext(MyContext);
+function Table() {
+  const { state: { planets }, filters } = useContext(Context);
+  const { filterByName: { name }, filterByNumericValues, order } = filters;
+  const { column: columnSort, sort } = order;
 
-  const comparado = {
-    'maior que': (a, b) => (a > b),
-    'menor que': (a, b) => (a < b),
-    'igual a': (a, b) => (a === b),
-  };
-  const THead = () => {
-    if (statewars.length) {
-      const keys = Object.keys(statewars[0]);
-      return (
-        <thead>
-          <tr>
-            {keys.map((i) => {
-              const classheaderID = `${i}`;
-              return (
-                <th className={ classheaderID } key={ i }>{i}</th>
-              );
-            })}
-          </tr>
-        </thead>
-      );
+  const renderTableHeaders = () => (
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Rotation Period</th>
+        <th>Orbital Period</th>
+        <th>Diameter</th>
+        <th>Climate</th>
+        <th>Gravity</th>
+        <th>Terrain</th>
+        <th>Surface Water</th>
+        <th>Population</th>
+        <th>Films</th>
+        <th>Created</th>
+        <th>Edited</th>
+        <th>URL</th>
+      </tr>
+    </thead>
+  );
+
+  const handleSort = () => {
+    const sortPlanets = [...planets];
+    if (sort === 'ASC') {
+      sortPlanets.sort(({ [columnSort]: a }, { [columnSort]: b }) => (
+        new Intl.Collator('en', { numeric: true }).compare(a, b)));
     }
-  };
-
-  const TBody = (mapfilterresult = statewars) => {
-    if (mapfilterresult.length) {
-      return (
-        <tbody>
-
-          {mapfilterresult.map((i) => {
-            const classplanet = `${i.name}`.replace(/\s/g, '');
-            return (
-              <tr key={ i.name }>
-                <td className={ classplanet }>{i.name}</td>
-                <td className={ classplanet }>{i.rotation_period}</td>
-                <td className={ classplanet }>{i.orbital_period}</td>
-                <td className={ classplanet }>{i.diameter}</td>
-                <td className={ classplanet }>{i.climate}</td>
-                <td className={ classplanet }>{i.gravity}</td>
-                <td className={ classplanet }>{i.terrain}</td>
-                <td className={ classplanet }>{i.surface_water}</td>
-                <td className={ classplanet }>{i.population}</td>
-                <td className={ classplanet }>{i.films}</td>
-                <td className={ classplanet }>{i.created}</td>
-                <td className={ classplanet }>{i.edited}</td>
-                <td className={ classplanet }>{i.url}</td>
-              </tr>
-            );
-          })}
-
-        </tbody>
-      );
+    if (sort === 'DESC') {
+      sortPlanets.sort(({ [columnSort]: a }, { [columnSort]: b }) => (
+        new Intl.Collator('en', { numeric: true }).compare(b, a)));
     }
+    return sortPlanets;
   };
 
-  const columnFilter = (statewar = statewars) => {
-    const { filterByNumericValues } = filterwars;
-
-    let itemFilter = statewar;
-
-    if (filterByNumericValues.length) {
-      filterByNumericValues
-        .filter(({ column, comparison, value }) => {
-          itemFilter = itemFilter.filter((sec) => {
-            const re = comparado[comparison](parseInt(sec[
-              column], 10), parseInt(value, 10));
-            return re;
-          });
-
-          return itemFilter;
-        });
-
-      return TBody(itemFilter);
-    }
-
-    return TBody(statewar);
-  };
-  const mapFilter = () => {
-    const { filterByName: { name } } = filterwars;
+  const handleFilter = () => {
+    let filteredPlanets = handleSort();
     if (name) {
-      const statewarsfilter = statewars.filter((i) => i.name.includes(name));
-      return columnFilter(statewarsfilter);
+      filteredPlanets = filteredPlanets
+        .filter((planet) => planet.name.toLowerCase().includes(name.toLowerCase()));
     }
-    return columnFilter();
+    if (filterByNumericValues.length > 0) {
+      filterByNumericValues.forEach((filter) => {
+        const { column, comparison, value } = filter;
+        filteredPlanets = filteredPlanets
+          .filter((planet) => {
+            switch (comparison) {
+            case 'maior que':
+              return Number(planet[column]) > Number(value);
+
+            case 'igual a':
+              return Number(planet[column]) === Number(value);
+
+            case 'menor que':
+              return Number(planet[column]) < Number(value);
+
+            default: return true;
+            }
+          });
+      });
+    }
+    return filteredPlanets;
   };
+
+  const renderTableBody = () => (
+    <tbody>
+      {handleFilter().map((planet) => (
+        <tr
+          key={ planet.name }
+        >
+          <td data-testid="planet-name">{planet.name}</td>
+          <td>{planet.rotation_period}</td>
+          <td>{planet.orbital_period}</td>
+          <td>{planet.diameter}</td>
+          <td>{planet.climate}</td>
+          <td>{planet.gravity}</td>
+          <td>{planet.terrain}</td>
+          <td>{planet.surface_water}</td>
+          <td>{planet.population}</td>
+          <td>{planet.films}</td>
+          <td>{planet.created}</td>
+          <td>{planet.edited}</td>
+          <td>{planet.url}</td>
+        </tr>))}
+    </tbody>
+  );
 
   return (
-    <table>
-      {THead()}
-      {mapFilter()}
-    </table>
+    <div className="table-container">
+      <table className="table">
+        {renderTableHeaders()}
+        {renderTableBody()}
+      </table>
+    </div>
   );
 }
 
-export default PlanetTable;
+export default Table;

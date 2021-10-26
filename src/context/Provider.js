@@ -1,41 +1,45 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import MyContext from './MyContext';
+import Context from './MyContext';
 
-const INITIAL_FILTER = {
-  filterByName: {
-    name: '',
-  },
-  filterByNumericValues: [],
-};
 function Provider({ children }) {
-  const [statewars, setStatewars] = useState([]);
-  const [filterwars, setfilterWars] = useState(INITIAL_FILTER);
+  const [state, setState] = useState({ planets: [], isLoading: true });
+  const [filters, setFilters] = useState({
+    filterByName: {
+      name: '',
+    },
+    filterByNumericValues: [],
+    order: { column: 'name', sort: 'ASC' },
+  });
+
   useEffect(() => {
-    const response = async () => {
-      const api = 'https://swapi-trybe.herokuapp.com/api/planets/';
-
-      const { results } = await fetch(api).then((result) => result.json());
-
-      results.forEach((item) => {
-        delete item.residents;
-      });
-
-      setStatewars(results);
+    const fetchApi = async () => {
+      const response = await fetch('https://swapi-trybe.herokuapp.com/api/planets/');
+      const { results } = await response.json();
+      setState({ planets: results, isLoading: false });
     };
-
-    response();
+    fetchApi();
   }, []);
-  const planetContexValue = { statewars, filterwars, setfilterWars };
+
+  const completeState = {
+    state,
+    setState,
+    filters,
+    setFilters,
+  };
+
   return (
-    <MyContext.Provider value={ planetContexValue }>
+    <Context.Provider value={ completeState }>
       { children }
-    </MyContext.Provider>
+    </Context.Provider>
   );
 }
 
 Provider.propTypes = {
-  children: PropTypes.node.isRequired,
+  children: PropTypes.oneOfType([
+    PropTypes.arrayOf(PropTypes.node),
+    PropTypes.node,
+  ]).isRequired,
 };
 
 export default Provider;
